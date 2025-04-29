@@ -1,0 +1,48 @@
+# Xcode
+DerivedData/
+build/
+
+# SwiftPM
+.swiftpm/
+.build/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Xcode workspace/user data
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+
+# Archives
+*.xcarchive
+
+# IDE配置缓存
+.idea/
+*.DS_Store
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Xcode自动生成的logs
+*.log
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+Package.resolved
+
+# Firebase
+GoogleService-Info.plist
+
