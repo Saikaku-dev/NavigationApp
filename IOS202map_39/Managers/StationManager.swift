@@ -10,11 +10,22 @@ import Observation
 @Observable
 class StationManager {
     
-    func fetchStations() async -> [StationModel]{
-        guard let stationAPIURL = URL(string: "https://express.heartrails.com/api/json?method=getStations&x=135.0&y=35.0") else {
+    var locationManager:LocationManager = LocationManager.shared
+    
+    func fetchStations() async -> [StationModel] {
+        guard let currentLocation = locationManager.currentLocation else {
+            print("現在の位置取得失敗")
+            return []
+        }
+        
+        let currentLati = currentLocation.latitude
+        let currentLongi = currentLocation.longitude
+        
+        guard let stationAPIURL = URL(string: "https://express.heartrails.com/api/json?method=getStations&x=\(currentLongi)&y=\(currentLati)") else {
             print("URL取得失敗")
             return []
         }
+        print("生成的URL: \(stationAPIURL)")
         
         do {
             let (data, _) = try await URLSession.shared.data(from: stationAPIURL)

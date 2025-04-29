@@ -14,15 +14,36 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            Map(position: $vm.locationManager.cameraPosition) {
+            Map(position: $vm.cameraPosition) {
                 UserAnnotation()
                 
                 ForEach(vm.currentStations, id: \.id) { station in
-                    Marker(station.name, coordinate: CLLocationCoordinate2D(latitude: station.y, longitude: station.x))
+                    Annotation(
+                        station.name,
+                        coordinate: CLLocationCoordinate2D(
+                            latitude: station.y,
+                            longitude: station.x
+                        )
+                    ) {
+                        VStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.red)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .onTapGesture {
+                                    vm.selectedStation = station
+                                    vm.selectStation()
+                                }
+                        }
+                    }
+                }
+                if let routePolyline = vm.routeManager.route?.polyline {
+                    MapPolyline(routePolyline)
+                        .stroke(.red, lineWidth: 4)
                 }
             }
             .mapStyle()
-            
             
             Button(action: {
                 Task {
@@ -31,6 +52,10 @@ struct ContentView: View {
             }) {
                 Text("最寄駅を表示")
             }
+        }
+        .sheet(isPresented: $vm.showStationDeatil) {
+            StationInfoView(vm: vm)
+                .presentationDetents([.fraction(0.2)])
         }
     }
 }
