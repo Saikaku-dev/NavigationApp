@@ -13,7 +13,7 @@ struct ContentView: View {
     @State private var vm = ContentViewModel()
     
     var body: some View {
-        VStack {
+        ZStack(alignment: .bottomTrailing) {
             Map(position: $vm.cameraPosition) {
                 UserAnnotation()
                 
@@ -26,36 +26,52 @@ struct ContentView: View {
                         )
                     ) {
                         VStack {
-                            Image(systemName: "mappin.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.red)
+                            Image(systemName: "tram.circle")
+                                .font(.system(size: 30))
+                                .foregroundColor(.blue)
                                 .background(Color.white)
                                 .clipShape(Circle())
                                 .onTapGesture {
-                                    vm.selectedStation = station
-                                    vm.selectStation()
+                                    vm.handleStationTap(station)
                                 }
                         }
                     }
                 }
-                if let routePolyline = vm.routeManager.route?.polyline {
+                if vm.showRoute, let routePolyline = vm.routeManager.route?.polyline {
                     MapPolyline(routePolyline)
                         .stroke(.red, lineWidth: 4)
                 }
             }
             .mapStyle()
+            .onAppear {
+                if let location = vm.locationManager.currentLocation {
+                    vm.moveToCurrentLocation(location)
+                }
+            }
             
             Button(action: {
-                Task {
-                    await vm.loadStations()
+                    Task {
+                        await vm.loadStations()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "tram.fill")
+                            .font(.headline)
+                        Text("周辺の駅")
+                            .font(.headline)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(30)
+                    .shadow(radius: 4)
                 }
-            }) {
-                Text("最寄駅を表示")
-            }
+                .padding([.bottom, .trailing], 20)
         }
         .sheet(isPresented: $vm.showStationDeatil) {
             StationInfoView(vm: vm)
-                .presentationDetents([.fraction(0.2)])
+                .presentationDetents([.fraction(0.3)])
         }
     }
 }

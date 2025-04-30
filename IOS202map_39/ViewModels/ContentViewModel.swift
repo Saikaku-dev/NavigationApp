@@ -10,16 +10,18 @@ import SwiftUI
 
 @Observable
 class ContentViewModel {
-    var currentStations:[StationModel] = []
-    
     var locationManager:LocationManager = LocationManager.shared
     var stationManager = StationManager()
-    var selectedStation:StationModel?
-    var showStationDeatil: Bool = false
     var routeManager = RouteManager()
+    var currentStations:[StationModel] = []
+    var selectedStation:StationModel?
+    
+    var showStationDeatil: Bool = false
     var walkingEstimatedTime: Int?
     var drivingEstimatedTime: Int?
     var transitEstimatedTime: Int?
+    var hasSetInitialCameraPosition = false
+    var showRoute:Bool = false
     
     var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -28,33 +30,68 @@ class ContentViewModel {
         )
     )
     
-    @MainActor
-    func loadStations() async {
-        let stations = await stationManager.fetchStations()
-        self.currentStations = stations
-        if routeManager.route != nil {
-            routeManager.route = nil
-            resetTime()
+    init() {
+        Task {
+            for await location in locationManager.$currentLocation.values {
+                if let loc = location, !hasSetInitialCameraPosition{
+                    self.moveToCurrentLocation(loc)
+                    hasSetInitialCameraPosition = true
+                }
+            }
         }
     }
     
-    func selectStation() {
-        if let station = selectedStation {
-            cameraPosition = .region(
-                MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(
-                        latitude: station.y,
-                        longitude: station.x),
-                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                )
-            )
-            if routeManager.route != nil {
-                routeManager.route = nil
-                resetTime()
-            }
-            showStationDeatil = true
-        }
+    @MainActor  //「最寄駅ボタン」押した際に、周囲の駅を配列に入れ表示する。
+    func loadStations() async {
+        let stations = await stationManager.fetchStations()
+        self.currentStations = stations
+        resetNavi()
     }
+    
+//    func selectStation() {
+//        if let station = selectedStation {
+//            cameraPosition = .region(
+//                MKCoordinateRegion(
+//                    center: CLLocationCoordinate2D(
+//                        latitude: station.y,
+//                        longitude: station.x),
+//                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+//                )
+//            )
+//            showStationDeatil = true
+//        }
+//    }
+    
+    func prepareForNewStationSelection(with station: StationModel) {
+        // 设置新车站
+        selectedStation = station
+        
+        // 重置导航状态（防止上一次的 route 残留）
+        routeManager.route = nil
+        showRoute = false
+        walkingEstimatedTime = nil
+        drivingEstimatedTime = nil
+        transitEstimatedTime = nil
+
+        // 显示详情
+        cameraPosition = .region(
+            MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: station.y, longitude: station.x),
+                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            )
+        )
+        showStationDeatil = true
+
+        // 加载三种交通方式的预计时间
+        walkToStation()
+        driveToStation()
+        transitToStation()
+    }
+
+    func handleStationTap(_ station: StationModel) {
+        prepareForNewStationSelection(with: station)
+    }
+
     
     func walkToStation() {
         calculate(to: selectedStation, transportType: .walking) { time in
@@ -91,13 +128,28 @@ class ContentViewModel {
         }
     }
     
-    func resetTime() {
+    //ルートおよび推定時間を値をnilに、そして選択した駅シートを閉める。
+    func resetNavi() {
+        routeManager.route = nil
         walkingEstimatedTime = nil
         drivingEstimatedTime = nil
         transitEstimatedTime = nil
+        showStationDeatil = false
+        showRoute = false
+        selectedStation = nil
     }
     
     func startNavigation() {
         showStationDeatil = false
+        showRoute = true
+    }
+    
+    func moveToCurrentLocation(_ coordinate: CLLocationCoordinate2D) {
+        cameraPosition = .region(
+            MKCoordinateRegion(
+                center: coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            )
+        )
     }
 }
