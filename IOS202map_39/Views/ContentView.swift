@@ -49,7 +49,8 @@ struct ContentView: View {
                 }
             }
             
-            Button(action: {
+            Button(action: { //駅の一覧を表示する。
+                vm.initialRoute()
                     Task {
                         await vm.loadStations()
                     }

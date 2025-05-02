@@ -30,7 +30,7 @@ struct StationInfoView: View {
                         
                         VStack(alignment: .trailing, spacing: 8) {
                             Button(action: {
-                                vm.resetNavi()
+                                vm.initialSelectStation()
                             }) {
                                 Image(systemName: "xmark.circle")
                                     .font(.title2)
@@ -52,7 +52,7 @@ struct StationInfoView: View {
                     VStack(spacing: 12) {
                         transportTypeBtn(
                             action: {
-                                vm.startNavigation()
+                                vm.startNavigation(transportType: .walking)
                             },
                             imgName: "figure.walk",
                             time: vm.walkingEstimatedTime,
@@ -60,7 +60,7 @@ struct StationInfoView: View {
                         )
                         transportTypeBtn(
                             action: {
-                                vm.startNavigation()
+                                vm.startNavigation(transportType: .automobile)
                             },
                             imgName: "car",
                             time: vm.drivingEstimatedTime,
@@ -68,7 +68,7 @@ struct StationInfoView: View {
                         )
                         transportTypeBtn(
                             action: {
-                                vm.startNavigation()
+                                vm.startNavigation(transportType: .transit)
                             },
                             imgName: "tram.fill",
                             time: vm.transitEstimatedTime,
@@ -78,11 +78,6 @@ struct StationInfoView: View {
                 }
                 .padding()
             }
-        }
-        .onAppear {
-            vm.walkToStation()
-            vm.driveToStation()
-            vm.transitToStation()
         }
     }
 }

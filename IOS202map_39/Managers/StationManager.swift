@@ -18,6 +18,7 @@ class StationManager {
             return []
         }
         
+        //現在位置の(経度・緯度)を代入
         let currentLati = currentLocation.latitude
         let currentLongi = currentLocation.longitude
         
@@ -25,12 +26,12 @@ class StationManager {
             print("URL取得失敗")
             return []
         }
-        print("生成的URL: \(stationAPIURL)")
+        print("生成したURL: \(stationAPIURL)")
         
         do {
             let (data, _) = try await URLSession.shared.data(from: stationAPIURL)
             let json = try JSONDecoder().decode(StationResponse.self, from: data)
-            let stations = json.response.station
+            let stations = json.response.station //StationModelを参照した配列を返す。
             print("取得した駅情報: \(stations)")
             return stations
         } catch {

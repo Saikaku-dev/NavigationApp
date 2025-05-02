@@ -40,47 +40,30 @@ class ContentViewModel {
             }
         }
     }
-    
-    @MainActor  //「最寄駅ボタン」押した際に、周囲の駅を配列に入れ表示する。
+    // MARK: LOADDATA
+    @MainActor
     func loadStations() async {
         let stations = await stationManager.fetchStations()
         self.currentStations = stations
-        resetNavi()
+        initialSelectStation()
     }
-    
-//    func selectStation() {
-//        if let station = selectedStation {
-//            cameraPosition = .region(
-//                MKCoordinateRegion(
-//                    center: CLLocationCoordinate2D(
-//                        latitude: station.y,
-//                        longitude: station.x),
-//                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-//                )
-//            )
-//            showStationDeatil = true
-//        }
-//    }
     
     func prepareForNewStationSelection(with station: StationModel) {
         // 设置新车站
         selectedStation = station
         
         // 重置导航状态（防止上一次的 route 残留）
-        routeManager.route = nil
-        showRoute = false
-        walkingEstimatedTime = nil
-        drivingEstimatedTime = nil
-        transitEstimatedTime = nil
+        initialRoute()
 
-        // 显示详情
+        // 選択した駅を中心にカメラ位置リセット
         cameraPosition = .region(
             MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: station.y, longitude: station.x),
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             )
         )
-        showStationDeatil = true
+        
+        showStationDeatil = true //詳細Sheetを表示する
 
         // 加载三种交通方式的预计时间
         walkToStation()
@@ -119,7 +102,7 @@ class ContentViewModel {
         }
         
         Task {
-            let time = await routeManager.calculateRoute(
+            let time = await routeManager.calculateTime(
                 from: location,
                 to: CLLocationCoordinate2D(latitude: station.y, longitude: station.x),
                 transportType: transportType
@@ -128,20 +111,45 @@ class ContentViewModel {
         }
     }
     
-    //ルートおよび推定時間を値をnilに、そして選択した駅シートを閉める。
-    func resetNavi() {
+    func initialSelectStation() {
+        selectedStation = nil
+        showStationDeatil = false
+    }
+    
+    func initialRoute() {
         routeManager.route = nil
         walkingEstimatedTime = nil
         drivingEstimatedTime = nil
         transitEstimatedTime = nil
-        showStationDeatil = false
         showRoute = false
-        selectedStation = nil
     }
     
-    func startNavigation() {
+    func startNavigation(transportType: MKDirectionsTransportType) {
         showStationDeatil = false
-        showRoute = true
+        
+        guard let fromCoordinate = locationManager.currentLocation,
+              let selected = selectedStation else {
+            print("出発地または目的地が不明です")
+            return
+        }
+        
+        let toCoordinate = CLLocationCoordinate2D(
+            latitude: selected.y,
+            longitude: selected.x
+        )
+        
+        Task {
+            if let route = await routeManager.calculateRoute(
+                from: fromCoordinate,
+                to: toCoordinate,
+                transportType: transportType
+            ) {
+                routeManager.route = route
+                showRoute = true
+            } else {
+                print("ルートが見つかりませんでした。")
+            }
+        }
     }
     
     func moveToCurrentLocation(_ coordinate: CLLocationCoordinate2D) {
